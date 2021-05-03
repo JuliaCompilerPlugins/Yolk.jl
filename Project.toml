@@ -1,0 +1,9 @@
+name = "Yolk"
+uuid = "9971953c-84de-4e85-bc3b-cfc7b21e0f9e"
+authors = ["McCoy Becker <mccoybecker@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+CodeInfoTools = "bc773b8a-8374-437a-b9f2-0e9785855863"
+Metatheory = "e9d8d322-4543-424a-9be4-0cc815abe26c"
+Mixtape = "17c23775-69b5-4366-8053-0c64bad4914c"
