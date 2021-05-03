@@ -26,7 +26,9 @@ end
 th = fold;
 
 # Optimize.
-src = opt(f, Tuple{Float64}; ctx = YolkOptimizer(th))
+src = opt(f, Tuple{Float64}; ctx = YolkOptimizer(th), opt = false)
+display(src)
+src = opt(f, Tuple{Float64}; ctx = YolkOptimizer(th), opt = true)
 display(src)
 
 end # module
