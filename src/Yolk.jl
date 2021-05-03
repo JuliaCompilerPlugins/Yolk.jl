@@ -1,7 +1,7 @@
 module Yolk
 
 using Mixtape
-import Mixtape: CompilationContext, allow, preopt!
+import Mixtape: CompilationContext, allow, optimize!
 using CodeInfoTools
 using Core.Compiler: Const, is_pure_intrinsic_infer, intrinsic_nothrow, anymap, quoted
 
@@ -61,9 +61,11 @@ function constant_propagation!(ir)
     return ir
 end
 
-function preopt!(ctx::YolkOptimizer, ir)
+function optimize!(ctx::YolkOptimizer, b)
+    ir = get_ir(b)
     ir = extract!(ir, ctx.theory)
     ir = constant_propagation!(ir)
+    ir = julia_passes!(ir, b.sv.src, b.sv)
     return ir
 end
 
