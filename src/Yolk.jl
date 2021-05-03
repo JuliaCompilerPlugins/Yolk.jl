@@ -3,7 +3,7 @@ module Yolk
 using Mixtape
 import Mixtape: CompilationContext, allow, preopt!
 using CodeInfoTools
-using Core.Compiler: Const
+using Core.Compiler: Const, is_pure_intrinsic_infer, intrinsic_nothrow, anymap, quoted
 
 using Metatheory
 using Metatheory.Library
@@ -12,6 +12,7 @@ using Metatheory.EGraphs
 @metatheory_init()
 
 struct YolkOptimizer <: CompilationContext end
+allow(::YolkOptimizer, m::Module, args...) = true
 
 comm_monoid = commutative_monoid(:(*), 1);
 
@@ -23,27 +24,27 @@ comm_group = @theory begin
 end
 
 distrib = @theory begin
-	a * (b + c) => (a * b) + (a * c)
-	(a * b) + (a * c) => a * (b + c)
+    a * (b + c) => (a * b) + (a * c)
+    (a * b) + (a * c) => a * (b + c)
 end
 
 powers = @theory begin
-	a * a => a^2
-	a => a^1
-	a^n * a^m => a^(n+m)
+    a * a => a^2
+    a => a^1
+    a^n * a^m => a^(n+m)
 end
 
 logids = @theory begin
-	log(a^n) => n * log(a)
-	log(x * y) => log(x) + log(y)
-	log(1) => 0
-	log(:e) => 1
-	:e^(log(x)) => x
+    log(a^n) => n * log(a)
+    log(x * y) => log(x) + log(y)
+    log(1) => 0
+    log(:e) => 1
+    :e^(log(x)) => x
 end
 
 fold = @theory begin
-	a::Number + b::Number |> a + b
-	a::Number * b::Number |> a * b
+    a::Number + b::Number |> a + b
+    a::Number * b::Number |> a * b
     a::Number - b::Number |> a - b
     a::Number / b::Number |> a / b
 end
@@ -56,7 +57,9 @@ function extract!(ir)
         if stmt isa Expr
             G = EGraph(stmt)
             saturate!(G, t)
+            display(stmt)
             ex = Metatheory.EGraphs.extract!(G, astsize)
+            display(ex)
             Core.Compiler.setindex!(ir.stmts[i], ex, :inst)
         end
     end
@@ -104,6 +107,6 @@ end
 opt(fn, as...) = emit(fn, Tuple{as...}; 
                       ctx = YolkOptimizer(), opt = true)
 
-export allow, opt, YolkOptimizer
+export opt, YolkOptimizer
 
 end # module
