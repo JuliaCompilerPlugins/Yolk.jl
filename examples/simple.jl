@@ -9,8 +9,24 @@ f(x) = begin
     return y
 end
 
-allow(::YolkOptimizer, m) = m == EqualitySaturation
-src = opt(f, Float64)
+# Define theory.
+using Metatheory
+using Metatheory.Library
+using Metatheory.EGraphs
+
+@metatheory_init()
+
+fold = @theory begin
+    a::Number + b::Number |> a + b
+    a::Number * b::Number |> a * b
+    a::Number - b::Number |> a - b
+    a::Number / b::Number |> a / b
+end
+
+th = fold;
+
+# Optimize.
+src = opt(f, Tuple{Float64}; ctx = YolkOptimizer(th))
 display(src)
 
 end # module
