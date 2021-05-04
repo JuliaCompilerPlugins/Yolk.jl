@@ -23,12 +23,10 @@ fold = @theory begin
     a::Number / b::Number |> a / b
 end
 
-th = fold;
-
 # Optimize.
-src = opt(f, Tuple{Float64}; ctx = YolkOptimizer(th), opt = false)
+src = opt(f, Tuple{Float64}; ctx = YolkOptimizer(fold), opt = false)
 display(src)
-src = opt(f, Tuple{Float64}; ctx = YolkOptimizer(th), opt = true)
+src = opt(f, Tuple{Float64}; ctx = YolkOptimizer(fold), opt = true)
 display(src)
 
 end # module

@@ -9,6 +9,8 @@ using Metatheory
 using Metatheory.Library
 using Metatheory.EGraphs
 
+@metatheory_init()
+
 struct YolkOptimizer <: CompilationContext
     theory::Vector{Rule}
     YolkOptimizer(t) = new(t)
@@ -70,8 +72,8 @@ function optimize!(ctx::YolkOptimizer, b)
 end
 
 function opt(fn, tt::Type{T};
-        ctx = YolkOptimizer, opt = true) where T <: Tuple
-    return emit(fn, tt; ctx = YolkOptimizer(), opt = opt)
+        ctx = YolkOptimizer(), opt = true) where T <: Tuple
+    return emit(fn, tt; ctx = ctx, opt = opt)
 end
 
 export opt, YolkOptimizer
