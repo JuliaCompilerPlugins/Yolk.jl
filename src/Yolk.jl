@@ -2,9 +2,10 @@ module Yolk
 
 using Mixtape
 import Mixtape: CompilationContext, allow, optimize!
+using MacroTools: @capture, postwalk, rmlines, unblock
 using CodeInfoTools
 using CompilerPluginTools: inline_const!
-using Core.Compiler: Const, is_pure_intrinsic_infer, intrinsic_nothrow, anymap, quoted, cfg_simplify!, compact!
+using Core.Compiler: Const, is_pure_intrinsic_infer, intrinsic_nothrow, anymap, quoted, cfg_simplify!, compact!, adce_pass!
 
 using Metatheory
 using Metatheory.Library
@@ -12,12 +13,14 @@ using Metatheory.EGraphs
 
 @metatheory_init()
 
+include("methodtheory.jl")
+
 struct YolkOptimizer <: CompilationContext
     theory::Vector{Rule}
     block_size_limit::Int
     opt::Bool
-    YolkOptimizer(t) = new(t, 3, true)
-    YolkOptimizer(t, b) = new(t, 3, b)
+    YolkOptimizer(t) = new(t, 2, true)
+    YolkOptimizer(t, b) = new(t, 2, b)
     YolkOptimizer() = new(Rule[])
 end
 allow(::YolkOptimizer, m::Module, args...) = true
@@ -38,14 +41,16 @@ function extract!(ctx, ir)
     for i in 1 : ctx.block_size_limit : length(ir.stmts)
         stmt = ir.stmts[i][:inst]
         type = ir.stmts[i][:type]
-        if stmt isa Expr
-            r = local_inline(stmt, ir.stmts)
-            G = EGraph(r)
-            saturate!(G, theory)
-            ex = Metatheory.EGraphs.extract!(G, astsize)
-            if !(ex == r)
-                Core.Compiler.setindex!(ir.stmts[i], ex, :inst)
-                Core.Compiler.setindex!(ir.stmts[i], shrink(ex, type), :type)
+        if stmt isa Expr && stmt.head == :call
+            if allow(ctx, CodeInfoTools.resolve(stmt.args[1]))
+                r = local_inline(stmt, ir.stmts)
+                G = EGraph(r)
+                saturate!(G, theory)
+                ex = Metatheory.EGraphs.extract!(G, astsize)
+                if !(ex == r)
+                    Core.Compiler.setindex!(ir.stmts[i], ex, :inst)
+                    Core.Compiler.setindex!(ir.stmts[i], shrink(ex, type), :type)
+                end
             end
         end
     end
@@ -74,6 +79,6 @@ function opt(fn, tt::Type{T};
     return emit(fn, tt; ctx = ctx, opt = opt)
 end
 
-export opt, YolkOptimizer
+export opt, YolkOptimizer, @methodtheory
 
 end # module

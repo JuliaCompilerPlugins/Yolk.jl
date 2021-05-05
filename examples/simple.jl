@@ -22,19 +22,30 @@ f(x) = begin
     return y
 end
 
-# Define theory.
-static = @theory begin
-    a - a => 0
-end
+#####
+##### Define theory.
+#####
 
+# Automatic.
 fold = @theory begin
-    a::Number + b::Number |> a + b
-    a::Number * b::Number |> a * b
-    a::Number - b::Number |> a - b
-    a::Number / b::Number |> a / b
+    Base.:(+)(a::Number, b::Number) |> a + b
 end
+display(fold)
 
-th = fold ∪ static;
+# Manual.
+th = []
+left = Metatheory.PatTerm(:call, [PatLiteral(Base.:(-)), PatVar(:a), PatVar(:a)])
+right = Metatheory.PatLiteral(0)
+new = Metatheory.RewriteRule(left, right)
+push!(th, new)
+left = Metatheory.PatTerm(:call, [PatLiteral(Base.:(+)), PatTypeAssertion(PatVar(:a), Number), PatTypeAssertion(PatVar(:b), Number)])
+right =  fold[1].right
+new = Metatheory.DynamicRule(left, right)
+push!(th, new)
+left = Metatheory.PatTerm(:call, [PatLiteral(Base.:(*)), PatTypeAssertion(PatVar(:a), Number), PatTypeAssertion(PatVar(:b), Number)])
+new = Metatheory.DynamicRule(left, Expr(:call, Base.:(*), :a, :b))
+push!(th, new)
+display(th)
 
 # Optimize.
 println("Pre-opt:")
