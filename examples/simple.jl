@@ -2,6 +2,19 @@ module EqualitySaturation
 
 using Yolk
 import Yolk: allow, YolkOptimizer
+using InteractiveUtils
+
+using Metatheory
+using Metatheory.Library
+using Metatheory.EGraphs
+
+using BenchmarkTools
+
+@metatheory_init()
+
+#####
+##### Exceedingly simple.
+#####
 
 f(x) = begin
     z = (x - x) + (10 * 15)
@@ -10,11 +23,9 @@ f(x) = begin
 end
 
 # Define theory.
-using Metatheory
-using Metatheory.Library
-using Metatheory.EGraphs
-
-@metatheory_init()
+static = @theory begin
+    a - a => 0
+end
 
 fold = @theory begin
     a::Number + b::Number |> a + b
@@ -23,10 +34,16 @@ fold = @theory begin
     a::Number / b::Number |> a / b
 end
 
-# Optimize.
-src = opt(f, Tuple{Float64}; ctx = YolkOptimizer(fold), opt = false)
-display(src)
-src = opt(f, Tuple{Float64}; ctx = YolkOptimizer(fold), opt = true)
-display(src)
+th = fold ∪ static;
 
+# Optimize.
+println("Pre-opt:")
+src = opt(f, Tuple{Int}; ctx = YolkOptimizer(th), opt = false)
+display(src)
+println("Julia native opt:")
+src = opt(f, Tuple{Int}; ctx = YolkOptimizer(th, false), opt = true)
+display(src)
+println("(Metatheory) + Julia native opt:")
+src = opt(f, Tuple{Int}; ctx = YolkOptimizer(th), opt = true)
+display(src)
 end # module
